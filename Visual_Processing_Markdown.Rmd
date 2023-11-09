@@ -1,0 +1,2468 @@
+---
+title: "Visual_Processing_Markdown"
+date: "2023-11-08"
+---
+```{r ## set directiory & load packages ## }
+##clear global environment 
+rm(list = ls(all.names = TRUE))
+
+##set directory 
+setwd("C:/Users/vagia/Desktop/r/Manuscript_1")
+
+##load packages
+library(readxl)
+library(writexl)
+library(Matrix)
+library(dplyr)
+library(tidyverse)
+library(data.table)
+library(ggplot2)
+library(ggpubr)
+library(finalfit)
+library(corrr)
+library(VIM)
+library(Hmisc)
+library(mice)
+library(miceadds)
+library(mitools)
+library(lavaan)
+library(dunn.test)
+library(rstatix)
+library(magrittr)
+library(margins)
+library(stats4)
+library(lattice)
+library(colorspace)
+library(grid)
+library(psych)
+library(psycho)
+library(car)
+library(fmsb)
+library(lsr)
+library(effsize)
+
+```
+
+```{r ## inspect data & examine outliers ## }
+
+##inspect patient data 
+
+d_out <- read_excel("1_VALUES_ONLY_ALL.xlsx")
+
+View(d_out)
+
+shapiro.test(d_out$RNFL)
+qqnorm(d_out$RNFL)
+hist(d_out$RNFL)
+boxplot(d_out$RNFL)
+
+shapiro.test(d_out$VA_Log)
+qqnorm(d_out$VA_Log)
+hist(d_out$VA_Log)
+boxplot(d_out$VA_Log)
+
+shapiro.test(d_out$VG_LATENCY)
+qqnorm(d_out$VG_LATENCY)
+hist(d_out$VG_LATENCY)
+boxplot(d_out$VG_LATENCY)
+
+shapiro.test(d_out$EC_ALL_ALONE)
+qqnorm(d_out$EC_ALL_ALONE)
+hist(d_out$EC_ALL_ALONE)
+boxplot(d_out$EC_ALL_ALONE)
+
+shapiro.test(d_out$EC_ERROR)
+qqnorm(d_out$EC_ERROR)
+hist(d_out$EC_ERROR)
+boxplot(d_out$EC_ERROR)
+
+shapiro.test(d_out$AS_ALONE)
+qqnorm(d_out$AS_ALONE)
+hist(d_out$AS_ALONE)
+boxplot(d_out$AS_ALONE)
+
+shapiro.test(d_out$AS_ERROR)
+qqnorm(d_out$AS_ERROR)
+hist(d_out$AS_ERROR)
+boxplot(d_out$AS_ERROR)
+
+shapiro.test(d_out$AS_FEP)
+qqnorm(d_out$AS_FEP)
+hist(d_out$AS_FEP)
+boxplot(d_out$AS_FEP)
+
+shapiro.test(d_out$MG_ALONE)
+qqnorm(d_out$MG_ALONE)
+hist(d_out$MG_ALONE)
+boxplot(d_out$MG_ALONE)
+
+shapiro.test(d_out$MG_ERROR)
+qqnorm(d_out$MG_ERROR)
+hist(d_out$MG_ERROR)
+boxplot(d_out$MG_ERROR)
+
+shapiro.test(d_out$MG_FEP)
+qqnorm(d_out$MG_FEP)
+hist(d_out$MG_FEP)
+boxplot(d_out$MG_FEP)
+
+shapiro.test(d_out$VDI_R)
+qqnorm(d_out$VDI_R)
+hist(d_out$VDI_R)
+boxplot(d_out$VDI_R)
+
+shapiro.test(d_out$VDI_L)
+qqnorm(d_out$VDI_L)
+hist(d_out$VDI_L)
+boxplot(d_out$VDI_L)
+
+
+##inspect control data 
+
+c <- read_excel("3_VALUES_ONLY_C.xlsx")
+
+shapiro.test(c$VG_latency)
+qqnorm(c$VG_latency)
+hist(c$VG_latency)
+boxplot(c$VG_latency)
+
+shapiro.test(c$EC_ALL_ALONE)
+qqnorm(c$EC_ALL_ALONE)
+hist(c$EC_ALL_ALONE)
+boxplot(c$EC_ALL_ALONE)
+
+shapiro.test(c$EC_error_all)
+qqnorm(c$EC_error_all)
+hist(c$EC_error_all)
+boxplot(c$EC_error_all)
+
+shapiro.test(c$AS_ALONE)
+qqnorm(c$AS_ALONE)
+hist(c$AS_ALONE)
+boxplot(c$AS_ALONE)
+
+shapiro.test(c$AS_FEP)
+qqnorm(c$AS_FEP)
+hist(c$AS_FEP)
+boxplot(c$AS_FEP)
+
+shapiro.test(c$AS_Error)
+qqnorm(c$AS_Error)
+hist(c$AS_Error)
+boxplot(c$AS_Error)
+
+shapiro.test(c$MG_ALONE)
+qqnorm(c$MG_ALONE)
+hist(c$MG_ALONE)
+boxplot(c$MG_ALONE)
+
+shapiro.test(c$MG_FEP)
+qqnorm(c$MG_FEP)
+hist(c$MG_FEP)
+boxplot(c$MG_FEP)
+
+shapiro.test(c$MG_error)
+qqnorm(c$MG_error)
+hist(c$MG_error)
+boxplot(c$MG_error)
+
+shapiro.test(c$`VDI Right`)
+qqnorm(c$`VDI Right`)
+hist(c$`VDI Right`)
+boxplot(c$`VDI Right`)
+
+shapiro.test(c$`VDI Left`)
+qqnorm(c$`VDI Left`)
+hist(c$`VDI Left`)
+boxplot(c$`VDI Left`)
+```
+
+```{r ## read final datasets ## }
+
+d <- read_excel("2_VALUES_ONLY_OUT.xlsx")
+
+CDMS <- read_excel("2_VALUES_ONLY_CDMS.xlsx")
+
+CIS <- read_excel("2_VALUES_ONLY_CIS.xlsx")
+
+dem <-read_excel("2_demographics.xlsx")
+
+c <- read_excel("3_VALUES_ONLY_C.xlsx")
+```
+
+```{r ## examine missingness in dataset ## }
+##visualise missing data 
+
+  ##adjust labels for graphs  
+d_out$VG_LAT <- d_out$VG_LATENCY
+d_out$EC_LAT <- d_out$EC_ALL_ALONE
+d_out$AS_LAT <- d_out$AS_ALONE
+d_out$MG_LAT <- d_out$MG_ALONE
+
+d_missing <- select(d_out, RNFL,VA_Log, VG_LAT, EC_LAT, EC_ERROR, AS_LAT, AS_FEP, AS_ERROR, MG_FEP, MG_ERROR,MG_LAT, VDI_R, VDI_L)
+
+  #visualise missingness across observations
+d_missing %>%
+  missing_plot()
+
+  #visualise missingness histogram
+aggr_plot <- aggr(d_missing, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(d_missing), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+
+##Sig differences between missing data and complete cases (across indicators) - only for indicators with missingness greater than n=2
+explanatory = c("VA_Log", "VG_LATENCY" , "EC_ALL_ALONE", "EC_ERROR", "AS_FEP" , "AS_ERROR", "AS_ALONE", "MG_ALONE", "MG_FEP","MG_ERROR","VDI_R","VDI_L")
+dependent = "RNFL"
+d %>% 
+  missing_compare(dependent, explanatory) 
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("RNFL", "VG_LATENCY" , "EC_ALL_ALONE", "EC_ERROR", "AS_FEP" , "AS_ERROR", "AS_ALONE", "MG_ALONE", "MG_FEP","MG_ERROR","VDI_R","VDI_L")
+dependent = "VA_Log"
+d %>% 
+  missing_compare(dependent, explanatory) 
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("RNFL", "VA_Log", "VG_LATENCY" , "EC_ALL_ALONE", "EC_ERROR", "AS_FEP" , "AS_ERROR", "AS_ALONE","VDI_R","VDI_L")
+dependent = "MG_ALONE"
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("RNFL", "VA_Log", "VG_LATENCY" , "EC_ALL_ALONE", "EC_ERROR", "AS_FEP" , "AS_ERROR", "AS_ALONE","VDI_R","VDI_L")
+dependent = "MG_ERROR"
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("RNFL", "VA_Log", "VG_LATENCY" , "EC_ALL_ALONE", "EC_ERROR", "AS_FEP" , "AS_ERROR", "AS_ALONE","VDI_R","VDI_L")
+dependent = "MG_FEP"
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("RNFL", "VA_Log", "VG_LATENCY" , "EC_ALL_ALONE", "EC_ERROR", "AS_FEP" , "AS_ERROR", "AS_ALONE", "MG_ALONE","MG_ERROR","MG_FEP")
+dependent = "VDI_R"
+d %>% 
+  missing_compare(dependent, explanatory) 
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+explanatory = c("RNFL", "VA_Log", "VG_LATENCY" , "EC_ALL_ALONE", "EC_ERROR", "AS_FEP" , "AS_ERROR", "AS_ALONE", "MG_ALONE","MG_ERROR","MG_FEP")
+dependent = "VDI_L"
+d %>% 
+  missing_compare(dependent, explanatory) 
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+#Sig differences between missing data and complete cases (across demographic variables)
+
+explanatory = c("SYMP_DURATION", "EDSS", 
+                "SEX", "AGE", "NART", "SDMT", "BDI")
+dependent = c("RNFL")
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("SYMP_DURATION", "EDSS", 
+                "SEX", "AGE", "NART", "SDMT", "BDI")
+dependent = c("VA_Log")
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("SYMP_DURATION", "EDSS", 
+                "SEX", "AGE", "NART", "SDMT", "BDI")
+dependent = c("MG_ALONE")
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("SYMP_DURATION", "EDSS", 
+                "SEX", "AGE", "NART", "SDMT", "BDI")
+dependent = c("MG_ERROR")
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("SYMP_DURATION", "EDSS", 
+                "SEX", "AGE", "NART", "SDMT", "BDI")
+dependent = c("MG_FEP")
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("SYMP_DURATION", "EDSS", 
+                "SEX", "AGE", "NART", "SDMT", "BDI")
+dependent = c("VDI_R")
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+
+
+explanatory = c("SYMP_DURATION", "EDSS", 
+                "SEX", "AGE", "NART", "SDMT", "BDI")
+dependent = c("VDI_L")
+d %>% 
+  missing_compare(dependent, explanatory)
+d %>% 
+  missing_pairs(dependent, explanatory, position = "fill",)
+```
+
+```{r ## patient & control descriptives/group differences ## }
+
+##descriptives for demographic variables (controls, CIS and CDMS)
+
+#sex
+table(c$Sex)
+table(CIS$SEX)
+table(CDMS$SEX)
+
+#age
+shapiro.test(c$Age)
+shapiro.test(CIS$AGE)
+shapiro.test(CDMS$AGE)
+
+mean(c$Age)
+sd(c$Age)
+range(c$Age)
+
+mean(CIS$AGE)
+sd(CIS$AGE)
+range(CIS$AGE)
+
+mean(CDMS$AGE)
+sd(CDMS$AGE)
+range(CDMS$AGE)
+
+#NART
+sum(is.na(c$NART))
+sum(is.na(CIS$NART))
+sum(is.na(CDMS$NART))
+
+shapiro.test(c$NART)
+shapiro.test(CIS$NART)
+shapiro.test(CDMS$NART)
+
+mean(c$NART, na.rm = TRUE)
+sd(c$NART, na.rm = TRUE)
+range(c$NART, na.rm = TRUE)
+
+mean(CIS$NART, na.rm = TRUE)
+sd(CIS$NART, na.rm = TRUE)
+range(CIS$NART, na.rm = TRUE)
+
+mean(CDMS$NART, na.rm = TRUE)
+sd(CDMS$NART, na.rm = TRUE)
+range(CDMS$NART, na.rm = TRUE)
+
+#BDI 
+sum(is.na(c$BDI))
+sum(is.na(CIS$BDI))
+sum(is.na(CDMS$BDI))
+
+shapiro.test(c$BDI)
+shapiro.test(CIS$BDI)
+shapiro.test(CDMS$BDI)
+
+mean(c$BDI, na.rm = TRUE)
+sd(c$BDI, na.rm = TRUE)
+range(c$BDI, na.rm = TRUE)
+
+mean(CIS$BDI, na.rm = TRUE)
+sd(CIS$BDI, na.rm = TRUE)
+range(CIS$BDI, na.rm = TRUE)
+
+mean(CDMS$BDI, na.rm = TRUE)
+sd(CDMS$BDI, na.rm = TRUE)
+range(CDMS$BDI, na.rm = TRUE)
+
+#SDMT 
+sum(is.na(c$SDMT))
+sum(is.na(CIS$SDMT))
+sum(is.na(CDMS$SDMT))
+
+shapiro.test(c$SDMT)
+shapiro.test(CIS$SDMT)
+shapiro.test(CDMS$SDMT)
+
+mean(c$SDMT, na.rm = TRUE)
+sd(c$SDMT, na.rm = TRUE)
+range(c$SDMT, na.rm = TRUE)
+
+mean(CIS$SDMT, na.rm = TRUE)
+sd(CIS$SDMT, na.rm = TRUE)
+range(CIS$SDMT, na.rm = TRUE)
+
+mean(CDMS$SDMT, na.rm = TRUE)
+sd(CDMS$SDMT, na.rm = TRUE)
+range(CDMS$SDMT, na.rm = TRUE)
+
+#EDSS
+sum(is.na(CIS$EDSS))
+sum(is.na(CDMS$EDSS))
+
+shapiro.test(CIS$EDSS)
+shapiro.test(CDMS$EDSS)
+
+median(CIS$EDSS, na.rm = TRUE)
+IQR(CIS$EDSS, na.rm = TRUE)
+range(CIS$EDSS, na.rm = TRUE)
+
+median(CDMS$EDSS, na.rm = TRUE)
+IQR(CDMS$EDSS, na.rm = TRUE)
+range(CDMS$EDSS, na.rm = TRUE)
+
+##symptom duration
+sum(is.na(CIS$SYMP_DURATION))
+sum(is.na(CDMS$SYMP_DURATION))
+
+shapiro.test(CIS$SYMP_DURATION)
+shapiro.test(CDMS$SYMP_DURATION)
+
+median(CIS$SYMP_DURATION, na.rm = TRUE)
+IQR(CIS$SYMP_DURATION, na.rm = TRUE)
+range(CIS$SYMP_DURATION, na.rm = TRUE)
+
+median(CDMS$SYMP_DURATION, na.rm = TRUE)
+IQR(CDMS$SYMP_DURATION, na.rm = TRUE)
+range(CDMS$SYMP_DURATION, na.rm = TRUE)
+
+#VA
+sum(is.na(CIS$VA_Log))
+sum(is.na(CDMS$VA_Log))
+
+median(CIS$VA_Log, na.rm = TRUE)
+IQR(CIS$VA_Log, na.rm = TRUE)
+range(CIS$VA_Log, na.rm = TRUE)
+
+median(CDMS$VA_Log, na.rm = TRUE)
+IQR(CDMS$VA_Log, na.rm = TRUE)
+range(CDMS$VA_Log, na.rm = TRUE)
+
+##demographic differences - HC, CIS and CDMS
+
+#AGE
+age_anova <- aov(Age ~ as.factor(Group), data = dem)
+summary(age_anova)
+TukeyHSD(age_anova)
+etaSquared(age_anova)
+
+#NART 
+NART_anova <- aov(NART ~ as.factor(Group), data = dem)
+summary(NART_anova)
+TukeyHSD(NART_anova)
+etaSquared(NART_anova)
+
+#BDI 
+BDI_anova <- aov(BDI ~ as.factor(Group), data = dem)
+summary(BDI_anova)
+TukeyHSD(BDI_anova)
+etaSquared(BDI_anova)
+
+#SDMT 
+SDMT_anova <- aov(SDMT ~ as.factor(Group), data = dem)
+summary(SDMT_anova)
+TukeyHSD(SDMT_anova)
+etaSquared(SDMT_anova)
+
+##demographic differences CIS and CDMS
+wilcox.test(CIS$SYMP_DURATION, CDMS$SYMP_DURATION, na.rm = TRUE, paired=FALSE)
+cliff.delta(CIS$SYMP_DURATION, CDMS$SYMP_DURATION)
+
+wilcox.test(CIS$EDSS, CDMS$EDSS, na.rm = TRUE, paired=FALSE)
+cliff.delta(CIS$EDSS, CDMS$EDSS)
+
+wilcox.test(CIS$VA_Log, CDMS$VA_Log, na.rm = TRUE, paired=FALSE)
+cliff.delta(CIS$VA_Log, CDMS$VA_Log)
+
+
+##correlation between indicators and demographic variables in patient group (CIS + CDMS) 
+
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    ) }
+
+correlation_matrix <- select(d, RNFL, VA_Log,  VG_LATENCY , EC_ALL_ALONE , EC_ERROR , AS_ALONE , AS_FEP , AS_ERROR , MG_ALONE ,  MG_FEP , MG_ERROR , VDI_R, VDI_L, SYMP_DURATION , AGE , EDSS , SEX,  BDI, NART, SDMT, VA_Log)
+
+options(scipen = 9999) # suppress scientific notation
+res2<-rcorr(as.matrix(correlation_matrix, method = "spearman"))
+flattenCorrMatrix(res2$r, res2$P)
+
+#calculate point-biserial correlation for sex
+cor.test(d$SEX, d$RNFL, method = "spearman")
+cor.test(d$SEX, d$VG_LATENCY, method = "spearman")
+cor.test(d$SEX, d$EC_ALL_ALONE, method = "spearman")
+cor.test(d$SEX, d$EC_ERROR, method = "spearman")
+cor.test(d$SEX, d$AS_ALONE, method = "spearman")
+cor.test(d$SEX, d$AS_FEP, method = "spearman")
+cor.test(d$SEX, d$AS_ERROR, method = "spearman")
+cor.test(d$SEX, d$MG_ALONE, method = "spearman")
+cor.test(d$SEX, d$MG_FEP, method = "spearman")
+cor.test(d$SEX, d$MG_ERROR, method = "spearman")
+cor.test(d$SEX, d$VDI_R, method = "spearman")
+cor.test(d$SEX, d$VDI_L, method = "spearman")
+cor.test(d$SEX, d$SYMP_DURATION, method = "spearman")
+cor.test(d$SEX, d$AGE, method = "spearman")
+cor.test(d$SEX, d$EDSS, method = "spearman")
+cor.test(d$SEX, d$BDI, method = "spearman")
+cor.test(d$SEX, d$NART, method = "spearman")
+cor.test(d$SEX, d$SDMT, method = "spearman")
+
+##correlation between visual processing indicators in patient group (CIS + CDMS)
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    ) }
+
+correlation_indicators <- select(d, RNFL, VG_LATENCY , EC_ALL_ALONE , EC_ERROR , AS_ALONE , AS_FEP , AS_ERROR , MG_ALONE ,  MG_FEP , MG_ERROR , VDI_R, VDI_L)
+
+options(scipen = 9999) # suppress scientific notation
+res2<-rcorr(as.matrix(correlation_indicators, method = "spearman"))
+flattenCorrMatrix(res2$r, res2$P)
+
+##Descriptives for indicators (control vs patient group)
+
+sum(is.na(c$VG_latency))
+sum(is.na(c$EC_ALL_ALONE))
+sum(is.na(c$EC_error_all))
+sum(is.na(c$AS_ALONE))
+sum(is.na(c$AS_FEP))
+sum(is.na(c$AS_Error))
+sum(is.na(c$MG_ALONE))
+sum(is.na(c$MG_FEP))
+sum(is.na(c$MG_error))
+sum(is.na(c$`VDI Right`))
+sum(is.na(c$`VDI Left`))
+
+median(d$RNFL, na.rm = TRUE)
+IQR(d$RNFL, na.rm = TRUE)
+range(d$RNFL, na.rm = TRUE)
+
+median(c$VG_latency, na.rm = TRUE)
+IQR(c$VG_latency, na.rm = TRUE)
+range(c$VG_latency, na.rm = TRUE)
+
+median(d$VG_LATENCY, na.rm = TRUE)
+IQR(d$VG_LATENCY, na.rm = TRUE)
+range(d$VG_LATENCY, na.rm = TRUE)
+
+median(c$EC_ALL_ALONE, na.rm = TRUE)
+IQR(c$EC_ALL_ALONE, na.rm = TRUE)
+range(c$EC_ALL_ALONE, na.rm = TRUE)
+
+median(d$EC_ALL_ALONE, na.rm = TRUE)
+IQR(d$EC_ALL_ALONE, na.rm = TRUE)
+range(d$EC_ALL_ALONE, na.rm = TRUE)
+
+median(c$EC_error_all, na.rm = TRUE)
+IQR(c$EC_error_all, na.rm = TRUE)
+range(c$EC_error_all, na.rm = TRUE)
+
+median(d$EC_ERROR, na.rm = TRUE)
+IQR(d$EC_ERROR, na.rm = TRUE)
+range(d$EC_ERROR, na.rm = TRUE)
+
+median(c$AS_ALONE, na.rm = TRUE)
+IQR(c$AS_ALONE, na.rm = TRUE)
+range(c$AS_ALONE, na.rm = TRUE)
+
+median(d$AS_ALONE, na.rm = TRUE)
+IQR(d$AS_ALONE, na.rm = TRUE)
+range(d$AS_ALONE, na.rm = TRUE)
+
+median(c$AS_FEP, na.rm = TRUE)
+IQR(c$AS_FEP, na.rm = TRUE)
+range(c$AS_FEP, na.rm = TRUE)
+
+median(d$AS_FEP, na.rm = TRUE)
+IQR(d$AS_FEP, na.rm = TRUE)
+range(d$AS_FEP, na.rm = TRUE)
+
+median(c$AS_Error, na.rm = TRUE)
+IQR(c$AS_Error, na.rm = TRUE)
+range(c$AS_Error, na.rm = TRUE)
+
+median(d$AS_ERROR, na.rm = TRUE)
+IQR(d$AS_ERROR, na.rm = TRUE)
+range(d$AS_ERROR, na.rm = TRUE)
+
+median(c$MG_ALONE, na.rm = TRUE)
+IQR(c$MG_ALONE, na.rm = TRUE)
+range(c$MG_ALONE, na.rm = TRUE)
+
+median(d$MG_ALONE, na.rm = TRUE)
+IQR(d$MG_ALONE, na.rm = TRUE)
+range(d$MG_ALONE, na.rm = TRUE)
+
+median(c$MG_FEP, na.rm = TRUE)
+IQR(c$MG_FEP, na.rm = TRUE)
+range(c$MG_FEP, na.rm = TRUE)
+
+median(d$MG_FEP, na.rm = TRUE)
+IQR(d$MG_FEP, na.rm = TRUE)
+range(d$MG_FEP, na.rm = TRUE)
+
+median(c$MG_error, na.rm = TRUE)
+IQR(c$MG_error, na.rm = TRUE)
+range(c$MG_error, na.rm = TRUE)
+
+median(d$MG_ERROR, na.rm = TRUE)
+IQR(d$MG_ERROR, na.rm = TRUE)
+range(d$MG_ERROR, na.rm = TRUE)
+
+median(c$`VDI Right`, na.rm = TRUE)
+IQR(c$`VDI Right`, na.rm = TRUE)
+range(c$`VDI Right`, na.rm = TRUE)
+
+median(d$VDI_R, na.rm = TRUE)
+IQR(d$VDI_R, na.rm = TRUE)
+range(d$VDI_R, na.rm = TRUE)
+
+median(c$`VDI Left`, na.rm = TRUE)
+IQR(c$`VDI Left`, na.rm = TRUE)
+range(c$`VDI Left`, na.rm = TRUE)
+
+median(d$VDI_L, na.rm = TRUE)
+IQR(d$VDI_L, na.rm = TRUE)
+range(d$VDI_L, na.rm = TRUE)
+
+##differences in indicators between patients and controls 
+wilcox.test(c$VG_latency, d$VG_LATENCY, na.rm = TRUE, paired=FALSE)
+cliff.delta(c$VG_latency, d$VG_LATENCY)
+
+wilcox.test(c$EC_ALL_ALONE, d$EC_ALL_ALONE, na.rm = TRUE, paired=FALSE)
+
+wilcox.test(c$EC_error_all, d$EC_ERROR, na.rm = TRUE, paired=FALSE)
+cliff.delta(c$EC_error_all, d$EC_ERROR)
+
+wilcox.test(c$AS_ALONE, d$AS_ALONE, na.rm = TRUE, paired=FALSE)
+
+wilcox.test(c$AS_FEP, d$AS_FEP, na.rm = TRUE, paired=FALSE)
+
+wilcox.test(c$AS_Error, d$AS_ERROR, na.rm = TRUE, paired=FALSE)
+cliff.delta(c$AS_Error, d$AS_ERROR)
+
+wilcox.test(c$MG_ALONE, d$MG_ALONE, na.rm = TRUE, paired=FALSE)
+
+wilcox.test(c$MG_FEP, d$MG_FEP, na.rm = TRUE, paired=FALSE)
+
+wilcox.test(c$MG_error, d$MG_ERROR, na.rm = TRUE, paired=FALSE)
+cliff.delta(c$MG_error, d$MG_ERROR)
+
+wilcox.test(c$`VDI Right`, d$VDI_R, na.rm = TRUE, paired=FALSE)
+
+wilcox.test(c$`VDI Left`, d$VDI_L, na.rm = TRUE, paired=FALSE)
+
+```
+
+```{r ## z-score variables ## }
+##RNFL normative data
+RNFLm = 100.1
+RNFLsd = 11.6
+
+##z-score variables
+d$zRNFL <- (d$RNFL - RNFLm)/RNFLsd
+
+d$zVG_LATENCY <- (d$VG_LATENCY - mean(c$VG_latency, na.rm = TRUE))/sd(c$VG_latency, na.rm = TRUE)
+
+d$zEC_LATENCY <- (d$EC_ALL_ALONE - mean(c$EC_ALL_ALONE, na.rm = TRUE))/sd(c$EC_ALL_ALONE, na.rm = TRUE)
+
+d$zEC_ERROR <- (d$EC_ERROR - mean(c$EC_error_all, na.rm = TRUE))/sd(c$EC_error_all, na.rm = TRUE)
+
+d$zAS_FEP <- (d$AS_FEP - mean(c$AS_FEP, na.rm = TRUE))/sd(c$AS_FEP, na.rm = TRUE)
+
+d$zAS_LATENCY <- (d$AS_ALONE - mean(c$AS_ALONE, na.rm = TRUE))/sd(c$AS_ALONE, na.rm = TRUE)
+
+d$zAS_ERROR <- (d$AS_ERROR - mean(c$AS_Error, na.rm = TRUE))/sd(c$AS_Error, na.rm = TRUE)
+
+d$zMG_FEP <- (d$MG_FEP - mean(c$MG_FEP, na.rm = TRUE))/sd(c$MG_FEP, na.rm = TRUE)
+
+d$zMG_LATENCY <- (d$MG_ALONE - mean(c$MG_ALONE, na.rm = TRUE))/sd(c$MG_ALONE, na.rm = TRUE)
+
+d$zMG_ERROR <- (d$MG_ERROR - mean(c$MG_error, na.rm = TRUE))/sd(c$MG_error, na.rm = TRUE)
+
+d$zVDI_R <- (d$VDI_R - mean(c$`VDI Right`, na.rm = TRUE))/sd(c$`VDI Right`, na.rm = TRUE)
+
+d$zVDI_L <- (d$VDI_L - mean(c$`VDI Left`, na.rm = TRUE))/sd(c$`VDI Left`, na.rm = TRUE)
+
+view(d)
+
+##test normality
+shapiro.test(d$zRNFL)
+hist(d$zRNFL)
+
+shapiro.test(d$VA_Log)
+hist(d$VA_Log)
+
+shapiro.test(d$zVG_LATENCY)
+hist(d$zVG_LATENCY)
+
+shapiro.test(d$zEC_LATENCY)
+hist(d$zEC_LATENCY)
+
+shapiro.test(d$EC_ERROR)
+hist(d$EC_ERROR)
+
+shapiro.test(d$AS_ALONE)
+hist(d$AS_ALONE)
+
+shapiro.test(d$AS_ERROR)
+hist(d$AS_ERROR)
+
+shapiro.test(d$AS_FEP)
+hist(d$AS_FEP)
+
+shapiro.test(d$MG_ALONE)
+hist(d$MG_ALONE)
+
+shapiro.test(d$MG_ERROR)
+hist(d$MG_ERROR)
+
+shapiro.test(d$MG_FEP)
+hist(d$MG_FEP)
+
+shapiro.test(d$VDI_R)
+hist(d$VDI_R)
+
+shapiro.test(d$VDI_L)
+hist(d$VDI_L)
+```
+
+```{r ## imputation model ## }
+#imputation model
+set.seed(1234)
+impute_arg_nk0 <- aregImpute(formula = ~  SDMT + BDI + NART + 
+        zRNFL + VA_Log + zVG_LATENCY + zEC_LATENCY + zEC_ERROR + zAS_LATENCY + zAS_FEP + zAS_ERROR + zMG_LATENCY +  zMG_FEP +zMG_ERROR + zVDI_R + zVDI_L + SYMP_DURATION + AGE + EDSS + SEX , data = d, nk= 0, n.impute = 50)
+
+d_ALL <- select(d, zRNFL, VA_Log,  zVG_LATENCY , zEC_LATENCY , zEC_ERROR , zAS_LATENCY , zAS_FEP , zAS_ERROR , zMG_LATENCY ,  zMG_FEP , zMG_ERROR , zVDI_R, zVDI_L, SYMP_DURATION , AGE , EDSS , SEX,  BDI, NART, SDMT)
+
+```
+
+```{r ## imputation diagnostics ## }
+##aregimpute check 
+
+print(impute_arg_nk0)
+
+summary(impute_arg_nk0)
+
+plot(impute_arg_nk0)
+
+
+##make mids file 
+
+imputed_data <- list()
+
+for (i in 1:50) {
+  imputed_data[[i]] <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                                     imputation = i,
+                                                     data = d_ALL,
+                                                     list.out = TRUE,
+                                                     pr = FALSE,
+                                                     check = FALSE))
+  imputed_data[[i]]$ID <- d$ID
+}
+
+
+a.mids <- miceadds::datlist2mids(imputed_data)
+
+
+##diagnostics for imputed datasets
+
+densityplot(a.mids, thicker = 12)
+densityplot(a.mids, thicker = 5)
+
+stripplot(a.mids, zRNFL~.imp, pch=20, cex=2)
+stripplot(a.mids, zMG_LATENCY~.imp, pch=20, cex=2)
+stripplot(a.mids, zMG_ERROR~.imp, pch=20, cex=2)
+stripplot(a.mids, zMG_FEP~.imp, pch=20, cex=2)
+stripplot(a.mids, zVDI_R~.imp, pch=20, cex=2)
+stripplot(a.mids, zVDI_L~.imp, pch=20, cex=2)
+stripplot(a.mids, zEC_LATENCY ~.imp, pch=20, cex=2)
+stripplot(a.mids, zAS_LATENCY ~.imp, pch=20, cex=2)
+stripplot(a.mids, zAS_FEP ~.imp, pch=20, cex=2)
+stripplot(a.mids, zAS_ERROR ~.imp, pch=20, cex=2)
+stripplot(a.mids, VA_Log ~.imp, pch=20, cex=2)
+stripplot(a.mids, SYMP_DURATION ~.imp, pch=20, cex=2)
+stripplot(a.mids, EDSS ~.imp, pch=20, cex=2)
+stripplot(a.mids, SDMT ~.imp, pch=20, cex=2)
+stripplot(a.mids, NART ~.imp, pch=20, cex=2)
+stripplot(a.mids, BDI ~.imp, pch=20, cex=2)
+
+```
+
+```{r ## dataframe for imputations ## }
+#dataframe for 50 imputations 
+
+impute_arg_1 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 1,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_1$ID <- d$ID
+
+impute_arg_2 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 2,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_2$ID <- d$ID
+
+impute_arg_3 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 3,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_3$ID <- d$ID
+
+impute_arg_4 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 4,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_4$ID <- d$ID
+
+impute_arg_5 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 5,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_5$ID <- d$ID
+
+impute_arg_6 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 6,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_6$ID <- d$ID
+
+impute_arg_7 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 7,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_7$ID <- d$ID
+
+impute_arg_8 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 8,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_8$ID <- d$ID
+
+impute_arg_9 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                              imputation = 9,
+                                              data = d_ALL,
+                                              list.out = TRUE,
+                                              pr = FALSE,
+                                              check = FALSE))
+impute_arg_9$ID <- d$ID
+
+impute_arg_10 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 10,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_10$ID <- d$ID
+
+
+impute_arg_11 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 11,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_11$ID <- d$ID
+
+impute_arg_12 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 12,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+
+impute_arg_12$ID <- d$ID
+
+impute_arg_13 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 13,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_13$ID <- d$ID
+
+impute_arg_14 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 14,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_14$ID <- d$ID
+
+impute_arg_15 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 15,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_15$ID <- d$ID
+
+impute_arg_16 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 16,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_16$ID <- d$ID
+
+impute_arg_17 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 17,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_17$ID <- d$ID
+
+impute_arg_18 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 18,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_18$ID <- d$ID
+
+impute_arg_19 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 19,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_19$ID <- d$ID
+
+impute_arg_20 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 20,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_20$ID <- d$ID
+
+
+impute_arg_21 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 21,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_21$ID <- d$ID
+
+impute_arg_22 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 22 ,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+
+impute_arg_22$ID <- d$ID
+
+impute_arg_23 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 23,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_23$ID <- d$ID
+
+impute_arg_24 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 24,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_24$ID <- d$ID
+
+impute_arg_25 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 25,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_25$ID <- d$ID
+
+impute_arg_26 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 26,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_26$ID <- d$ID
+
+impute_arg_27 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 27 ,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_27$ID <- d$ID
+
+impute_arg_28 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 28,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_28$ID <- d$ID
+
+impute_arg_29 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 29,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_29$ID <- d$ID
+
+impute_arg_30 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 30,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_30$ID <- d$ID
+
+impute_arg_31 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 31,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_31$ID <- d$ID
+
+impute_arg_32 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 32,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_32$ID <- d$ID
+
+impute_arg_33 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 33,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_33$ID <- d$ID
+
+impute_arg_34 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 34,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_34$ID <- d$ID
+
+impute_arg_35 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 35,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_35$ID <- d$ID
+
+impute_arg_36 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 36,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_36$ID <- d$ID
+
+impute_arg_37 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 37,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_37$ID <- d$ID
+
+impute_arg_38 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 38,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_38$ID <- d$ID
+
+impute_arg_39 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation =39 ,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_39$ID <- d$ID
+
+impute_arg_40 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 40,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_40$ID <- d$ID
+
+
+impute_arg_41 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 41,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_41$ID <- d$ID
+
+impute_arg_42 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 42,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_42$ID <- d$ID
+
+impute_arg_43 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 43,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_43$ID <- d$ID
+
+impute_arg_44 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 44,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_44$ID <- d$ID
+
+impute_arg_45 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 45 ,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_45$ID <- d$ID
+
+impute_arg_46 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 46,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_46$ID <- d$ID
+
+impute_arg_47 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 47,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_47$ID <- d$ID
+
+impute_arg_48 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 48,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_48$ID <- d$ID
+
+impute_arg_49 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 49,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_49$ID <- d$ID
+
+impute_arg_50 <- as.data.frame(impute.transcan(impute_arg_nk0,
+                                               imputation = 50,
+                                               data = d_ALL,
+                                               list.out = TRUE,
+                                               pr = FALSE,
+                                               check = FALSE))
+impute_arg_50$ID <- d$ID
+```
+
+```{r ## combine imputations ## }
+#bind imputations 
+impute_bind <- bind_rows(impute_arg_1, 	impute_arg_2, 	impute_arg_3, 	impute_arg_4, 	impute_arg_5, 	impute_arg_6, 	impute_arg_7, 	impute_arg_8, 	impute_arg_9, 	impute_arg_10, 	impute_arg_11, 	impute_arg_12, 	impute_arg_13, 	impute_arg_14, 	impute_arg_15, 	impute_arg_16, 	impute_arg_17, 	impute_arg_18, 	impute_arg_19, 	impute_arg_20, 	impute_arg_21, 	impute_arg_22, 	impute_arg_23, 	impute_arg_24, 	impute_arg_25, 	impute_arg_26, 	impute_arg_27, 	impute_arg_28, 	impute_arg_29, 	impute_arg_30, 	impute_arg_31, 	impute_arg_32, 	impute_arg_33, 	impute_arg_34, 	impute_arg_35, 	impute_arg_36, 	impute_arg_37, 	impute_arg_38, 	impute_arg_39, 	impute_arg_40, 	impute_arg_41, 	impute_arg_42, 	impute_arg_43, 	impute_arg_44, 	impute_arg_45, 	impute_arg_46, 	impute_arg_47, 	impute_arg_48, 	impute_arg_49, 	impute_arg_50,)
+
+view(impute_bind)
+
+#create excel doc with 50 imputations
+write_xlsx(impute_bind, "5_50_imputations.xlsx")
+
+#average imputations
+df_impute_bind <- as.data.frame(impute_bind)
+
+Impute_mean <- df_impute_bind %>% group_by(ID) %>% summarise(across(everything(), list(mean)))
+
+View(Impute_mean)
+
+##add to d dataset 
+impute_select <- select(Impute_mean, ID, zRNFL_1, VA_Log_1, zVG_LATENCY_1, zEC_LATENCY_1 , zEC_ERROR_1 , zAS_LATENCY_1 , zAS_FEP_1 , zAS_ERROR_1 , zMG_LATENCY_1 ,  zMG_FEP_1 , zMG_ERROR_1 , zVDI_R_1, zVDI_L_1) 
+
+demographic_select <- select(Impute_mean, SDMT_1, BDI_1, NART_1, SYMP_DURATION_1, EDSS_1)
+
+d$zRNFL_1 <- impute_select$zRNFL_1
+d$VA_Log_1 <- impute_select$VA_Log_1
+d$zVG_LATENCY_1 <- impute_select$zVG_LATENCY_1
+d$zEC_LATENCY_1 <- impute_select$zEC_LATENCY_1
+d$zEC_ERROR_1 <- impute_select$zEC_ERROR_1
+d$zAS_LATENCY_1 <- impute_select$zAS_LATENCY_1
+d$zAS_FEP_1 <- impute_select$zAS_FEP_1
+d$zAS_ERROR_1 <- impute_select$zAS_ERROR_1
+d$zMG_LATENCY_1 <- impute_select$zMG_LATENCY_1
+d$zMG_FEP_1 <- impute_select$zMG_FEP_1
+d$zMG_ERROR_1 <- impute_select$zMG_ERROR_1
+d$zVDI_R_1 <- impute_select$zVDI_R_1
+d$zVDI_L_1 <- impute_select$zVDI_L_1
+
+d$SDMT_1 <- demographic_select$SDMT_1
+d$BDI_1 <- demographic_select$BDI_1
+d$NART_1 <- demographic_select$NART_1
+d$SYMP_DURATION_1 <- demographic_select$SYMP_DURATION_1
+d$EDSS_1 <- demographic_select$EDSS_1
+
+#create excel file with averaged imputations 
+write_xlsx(d, "6_Imputed_dataset.xlsx")
+
+```
+
+```{r ## check distributions/estimates for imputed vs non-imputed data ## }
+
+##check distributions 
+
+d_imp <- read_xlsx("6_Imputed_dataset.xlsx")
+
+
+hist(d_imp$zRNFL, col=rgb(0,0,1,0.2),
+     xlab='RNFL', ylab='Frequency', main='Nonimputed zRNFL')
+
+hist(d_imp$zRNFL_1, col=rgb(0,0,1,0.2),
+     xlab='RNFL', ylab='Frequency', main='Imputed zRNFL', breaks = 7)
+
+hist(d_imp$VA_Log, col=rgb(0,0,1,0.2),
+     xlab='VA', ylab='Frequency', main='Nonimputed VA_Log')
+
+hist(d_imp$VA_Log_1, col=rgb(0,0,1,0.2),
+     xlab='VA', ylab='Frequency', main='Imputed VA_Log')
+
+hist(d_imp$zMG_LATENCY, col=rgb(0,0,1,0.2),
+     xlab='MG_LATENCY', ylab='Frequency', main='Nonimputed zMG_LATENCY')
+
+hist(d_imp$zMG_LATENCY_1, col=rgb(0,0,1,0.2),
+     xlab='MG_LATENCY', ylab='Frequency', main='Imputed zMG_LATENCY')
+
+hist(d_imp$zMG_ERROR, col=rgb(0,0,1,0.2),
+     xlab='MG_ERROR', ylab='Frequency', main='Nonimputed zMG_ERROR')
+
+hist(d_imp$zMG_ERROR_1, col=rgb(0,0,1,0.2),
+     xlab='MG_ERROR', ylab='Frequency', main='Imputed zMG_ERROR')
+
+hist(d_imp$zMG_FEP, col=rgb(0,0,1,0.2),
+     xlab='MG_FEP', ylab='Frequency', main='Nonimputed zMG_FEP')
+
+hist(d_imp$zMG_FEP_1, col=rgb(0,0,1,0.2),
+     xlab='MG_FEP', ylab='Frequency', main='Imputed zMG_FEP')
+
+hist(d_imp$zVDI_R, col=rgb(0,0,1,0.2),
+     xlab='VDI_R', ylab='Frequency', main='Nonimputed zVDI_R')
+
+hist(d_imp$zVDI_R_1, col=rgb(0,0,1,0.2),
+     xlab='VDI_R', ylab='Frequency', main='Imputed zVDI_R')
+
+hist(d_imp$zVDI_L, col=rgb(0,0,1,0.2),
+     xlab='VDI_L', ylab='Frequency', main='Nonimputed zVDI_L')
+
+hist(d_imp$zVDI_L_1, col=rgb(0,0,1,0.2),
+     xlab='VDI_L', ylab='Frequency', main='Imputed zVDI_L')
+
+##check estimates for imputed vs non-imputed data
+
+mean(d$zRNFL, na.rm=TRUE)
+sd(d$zRNFL, na.rm=TRUE)
+
+mean(d$zRNFL_1, na.rm=TRUE)
+sd(d$zRNFL_1, na.rm=TRUE)
+
+t.test(d$zRNFL_1, mu = -0.8602614, alternative = "two.sided")
+
+
+median(d$VA_Log, na.rm=TRUE)
+IQR(d$VA_Log, na.rm=TRUE)
+
+median(d$VA_Log_1, na.rm=TRUE)
+IQR(d$VA_Log_1, na.rm=TRUE)
+
+wilcox.test(d$VA_Log_1, mu = -0.1373305, alternative = "two.sided")
+
+
+median(d$zMG_LATENCY, na.rm=TRUE)
+IQR(d$zMG_LATENCY, na.rm=TRUE)
+
+median(d$zMG_LATENCY_1, na.rm=TRUE)
+IQR(d$zMG_LATENCY_1, na.rm=TRUE)
+
+wilcox.test(d$zMG_LATENCY_1, mu = -0.2565267, alternative = "two.sided")
+
+
+median(d$zMG_ERROR, na.rm=TRUE)
+IQR(d$zMG_ERROR, na.rm=TRUE)
+
+median(d$zMG_ERROR_1, na.rm=TRUE)
+IQR(d$zMG_ERROR_1, na.rm=TRUE)
+
+wilcox.test(d$zMG_ERROR_1, mu = 0.5685938, alternative = "two.sided")
+
+
+median(d$zMG_FEP, na.rm=TRUE)
+IQR(d$zMG_FEP, na.rm=TRUE)
+
+median(d$zMG_FEP_1, na.rm=TRUE)
+IQR(d$zMG_FEP_1, na.rm=TRUE)
+
+wilcox.test(d$zMG_FEP_1, mu = -0.5582171, alternative = "two.sided")
+
+
+median(d$zVDI_R, na.rm=TRUE)
+IQR(d$zVDI_R, na.rm=TRUE)
+
+median(d$zVDI_R_1, na.rm=TRUE)
+IQR(d$zVDI_R_1, na.rm=TRUE)
+
+wilcox.test(d$zVDI_R_1, mu = -0.1706885, alternative = "two.sided")
+
+
+median(d$zVDI_L, na.rm=TRUE)
+IQR(d$zVDI_L, na.rm=TRUE)
+
+median(d$zVDI_L_1, na.rm=TRUE)
+IQR(d$zVDI_L_1, na.rm=TRUE)
+
+wilcox.test(d$zVDI_L_1, mu = 0.02093608 , alternative = "two.sided")
+
+```
+
+```{r ## inspect symmetry of MI for missing data points ## }
+
+all_impute <- read_excel("5_50_imputations.xlsx")
+
+view(all_impute)
+
+#all missing RNFL
+RNFL1 <- all_impute[ which(all_impute$ID=='MS008'), ]
+RNFL2 <- all_impute[ which(all_impute$ID=='MS009'), ]
+RNFL3 <- all_impute[ which(all_impute$ID=='MS033'), ]
+RNFL4 <- all_impute[ which(all_impute$ID=='MS036'), ]
+RNFL5 <- all_impute[ which(all_impute$ID=='MS037'), ]
+RNFL6 <- all_impute[ which(all_impute$ID=='MS041'), ]
+RNFL7 <- all_impute[ which(all_impute$ID=='MS042'), ]
+RNFL8 <- all_impute[ which(all_impute$ID=='MS043'), ]
+RNFL9 <- all_impute[ which(all_impute$ID=='MS049'), ]
+RNFL10 <- all_impute[ which(all_impute$ID=='MS096'), ]
+RNFL11 <- all_impute[ which(all_impute$ID=='MS097'), ]
+RNFL12 <- all_impute[ which(all_impute$ID=='MS102'), ]
+RNFL13 <- all_impute[ which(all_impute$ID=='MS106'), ]
+RNFL14 <- all_impute[ which(all_impute$ID=='MS117'), ]
+RNFL15 <- all_impute[ which(all_impute$ID=='MS130'), ]
+RNFL16 <- all_impute[ which(all_impute$ID=='MS135'), ]
+
+shapiro.test(RNFL1$zRNFL)
+hist(RNFL1$zRNFL)
+
+shapiro.test(RNFL2$zRNFL)
+hist(RNFL2$zRNFL)
+
+shapiro.test(RNFL3$zRNFL)
+hist(RNFL3$zRNFL)
+
+shapiro.test(RNFL4$zRNFL)
+hist(RNFL4$zRNFL)
+
+shapiro.test(RNFL5$zRNFL)
+hist(RNFL5$zRNFL)
+
+shapiro.test(RNFL6$zRNFL)
+hist(RNFL6$zRNFL)
+
+shapiro.test(RNFL7$zRNFL)
+hist(RNFL7$zRNFL)
+
+shapiro.test(RNFL8$zRNFL)
+hist(RNFL8$zRNFL)
+
+shapiro.test(RNFL9$zRNFL)
+hist(RNFL9$zRNFL)
+
+shapiro.test(RNFL10$zRNFL)
+hist(RNFL10$zRNFL)
+
+shapiro.test(RNFL11$zRNFL)
+hist(RNFL11$zRNFL)
+
+shapiro.test(RNFL12$zRNFL)
+hist(RNFL12$zRNFL)
+
+shapiro.test(RNFL13$zRNFL)
+hist(RNFL13$zRNFL)
+
+shapiro.test(RNFL14$zRNFL)
+hist(RNFL14$zRNFL)
+
+shapiro.test(RNFL15$zRNFL)
+hist(RNFL15$zRNFL)
+
+shapiro.test(RNFL16$zRNFL)
+hist(RNFL16$zRNFL)
+
+#all missing VA
+VA1 <- all_impute[ which(all_impute$ID=='MS008'), ]
+VA2 <- all_impute[ which(all_impute$ID=='MS027'), ]
+VA3 <- all_impute[ which(all_impute$ID=='MS033'), ]
+VA4 <- all_impute[ which(all_impute$ID=='MS041'), ]
+VA5 <- all_impute[ which(all_impute$ID=='MS042'), ]
+VA6 <- all_impute[ which(all_impute$ID=='MS043'), ]
+VA7 <- all_impute[ which(all_impute$ID=='MS050'), ]
+VA8 <- all_impute[ which(all_impute$ID=='MS067'), ]
+VA9 <- all_impute[ which(all_impute$ID=='MS069'), ]
+VA10 <- all_impute[ which(all_impute$ID=='MS075'), ]
+VA11 <- all_impute[ which(all_impute$ID=='MS077'), ]
+VA12 <- all_impute[ which(all_impute$ID=='MS116'), ]
+VA13 <- all_impute[ which(all_impute$ID=='MS125'), ]
+VA14 <- all_impute[ which(all_impute$ID=='MS130'), ]
+
+shapiro.test(VA1$VA_Log)
+hist(VA1$VA_Log)
+
+shapiro.test(VA2$VA_Log)
+hist(VA2$VA_Log)
+
+shapiro.test(VA3$VA_Log)
+hist(VA3$VA_Log)
+
+shapiro.test(VA4$VA_Log)
+hist(VA4$VA_Log)
+
+shapiro.test(VA5$VA_Log)
+hist(VA5$VA_Log)
+
+shapiro.test(VA6$VA_Log)
+hist(VA6$VA_Log)
+
+shapiro.test(VA7$VA_Log)
+hist(VA7$VA_Log)
+
+shapiro.test(VA8$VA_Log)
+hist(VA8$VA_Log)
+
+shapiro.test(VA9$VA_Log)
+hist(VA9$VA_Log)
+
+shapiro.test(VA10$VA_Log)
+hist(VA10$VA_Log)
+
+shapiro.test(VA11$VA_Log)
+hist(VA11$VA_Log)
+
+shapiro.test(VA12$VA_Log)
+hist(VA12$VA_Log)
+
+shapiro.test(VA13$VA_Log)
+hist(VA13$VA_Log)
+
+shapiro.test(VA14$VA_Log)
+hist(VA14$VA_Log)
+
+#missing EC_LATENCY
+EC_L1 <- all_impute[ which(all_impute$ID=='MS023'), ]
+EC_L2 <- all_impute[ which(all_impute$ID=='MS049'), ]
+
+shapiro.test(EC_L1$zEC_LATENCY)
+hist(EC_L1$zEC_LATENCY)
+
+shapiro.test(EC_L2$zEC_LATENCY)
+hist(EC_L2$zEC_LATENCY)
+
+#missing AS_LATECY
+AS_L1 <- all_impute[ which(all_impute$ID=='MS124'), ]
+AS_L2 <- all_impute[ which(all_impute$ID=='MS029'), ]
+
+shapiro.test(AS_L1$zAS_LATENCY)
+hist(AS_L1$zAS_LATENCY)
+
+shapiro.test(AS_L2$zAS_LATENCY)
+hist(AS_L2$zAS_LATENCY)
+
+#missing AS_ERR
+AS_E1 <- all_impute[ which(all_impute$ID=='MS124'), ]
+AS_E2 <- all_impute[ which(all_impute$ID=='MS029'), ]
+
+shapiro.test(AS_E1$zAS_ERROR)
+hist(AS_E1$zAS_ERROR)
+
+shapiro.test(AS_E2$zAS_ERROR)
+hist(AS_E2$zAS_ERROR)
+
+#missing AS_FEP
+AS_F1 <- all_impute[ which(all_impute$ID=='MS124'), ]
+AS_F2 <- all_impute[ which(all_impute$ID=='MS073'), ]
+
+shapiro.test(AS_F1$zAS_FEP)
+hist(AS_F1$zAS_FEP)
+
+shapiro.test(AS_F2$zAS_FEP)
+hist(AS_F2$zAS_FEP)
+
+#missing MG_LATENCY
+MG_L1 <- all_impute[ which(all_impute$ID=='MS013'), ]
+MG_L2 <- all_impute[ which(all_impute$ID=='MS094'), ]
+MG_L3 <- all_impute[ which(all_impute$ID=='MS095'), ]
+MG_L4 <- all_impute[ which(all_impute$ID=='MS096'), ]
+MG_L5 <- all_impute[ which(all_impute$ID=='MS098'), ]
+MG_L6 <- all_impute[ which(all_impute$ID=='MS099'), ]
+MG_L7 <- all_impute[ which(all_impute$ID=='MS100'), ]
+MG_L8 <- all_impute[ which(all_impute$ID=='MS101'), ]
+MG_L9 <- all_impute[ which(all_impute$ID=='MS103'), ]
+MG_L10 <- all_impute[ which(all_impute$ID=='MS104'), ]
+MG_L11 <- all_impute[ which(all_impute$ID=='MS105'), ]
+MG_L12 <- all_impute[ which(all_impute$ID=='MS106'), ]
+MG_L13 <- all_impute[ which(all_impute$ID=='MS107'), ]
+MG_L14 <- all_impute[ which(all_impute$ID=='MS108'), ]
+MG_L15 <- all_impute[ which(all_impute$ID=='MS109'), ]
+MG_L16 <- all_impute[ which(all_impute$ID=='MS110'), ]
+MG_L17 <- all_impute[ which(all_impute$ID=='MS111'), ]
+MG_L18 <- all_impute[ which(all_impute$ID=='MS112'), ]
+MG_L19 <- all_impute[ which(all_impute$ID=='MS113'), ]
+MG_L20 <- all_impute[ which(all_impute$ID=='MS114'), ]
+MG_L21 <- all_impute[ which(all_impute$ID=='MS115'), ]
+MG_L22 <- all_impute[ which(all_impute$ID=='MS116'), ]
+MG_L23 <- all_impute[ which(all_impute$ID=='MS117'), ]
+MG_L24 <- all_impute[ which(all_impute$ID=='MS118'), ]
+MG_L25 <- all_impute[ which(all_impute$ID=='MS120'), ]
+MG_L26 <- all_impute[ which(all_impute$ID=='MS121'), ]
+MG_L27 <- all_impute[ which(all_impute$ID=='MS131'), ]
+MG_L28 <- all_impute[ which(all_impute$ID=='MS029'), ]
+
+shapiro.test(MG_L1$zMG_LATENCY)
+hist(MG_L1$zMG_LATENCY )
+
+shapiro.test(MG_L2$zMG_LATENCY)
+hist(MG_L2$zMG_LATENCY )
+
+shapiro.test(MG_L3$zMG_LATENCY)
+hist(MG_L3$zMG_LATENCY )
+
+shapiro.test(MG_L4$zMG_LATENCY)
+hist(MG_L4$zMG_LATENCY )
+
+shapiro.test(MG_L5$zMG_LATENCY)
+hist(MG_L5$zMG_LATENCY )
+
+shapiro.test(MG_L6$zMG_LATENCY)
+hist(MG_L6$zMG_LATENCY )
+
+shapiro.test(MG_L7$zMG_LATENCY)
+hist(MG_L7$zMG_LATENCY )
+
+shapiro.test(MG_L8$zMG_LATENCY)
+hist(MG_L8$zMG_LATENCY )
+
+shapiro.test(MG_L9$zMG_LATENCY)
+hist(MG_L9$zMG_LATENCY )
+
+shapiro.test(MG_L10$zMG_LATENCY)
+hist(MG_L10$zMG_LATENCY )
+
+shapiro.test(MG_L11$zMG_LATENCY)
+hist(MG_L11$zMG_LATENCY )
+
+shapiro.test(MG_L12$zMG_LATENCY)
+hist(MG_L12$zMG_LATENCY )
+
+shapiro.test(MG_L13$zMG_LATENCY)
+hist(MG_L13$zMG_LATENCY )
+
+shapiro.test(MG_L14$zMG_LATENCY)
+hist(MG_L14$zMG_LATENCY )
+
+shapiro.test(MG_L15$zMG_LATENCY)
+hist(MG_L15$zMG_LATENCY )
+
+shapiro.test(MG_L16$zMG_LATENCY)
+hist(MG_L16$zMG_LATENCY )
+
+shapiro.test(MG_L17$zMG_LATENCY)
+hist(MG_L17$zMG_LATENCY )
+
+shapiro.test(MG_L18$zMG_LATENCY)
+hist(MG_L18$zMG_LATENCY )
+
+shapiro.test(MG_L19$zMG_LATENCY)
+hist(MG_L19$zMG_LATENCY )
+
+shapiro.test(MG_L20$zMG_LATENCY)
+hist(MG_L20$zMG_LATENCY )
+
+shapiro.test(MG_L21$zMG_LATENCY)
+hist(MG_L21$zMG_LATENCY )
+
+shapiro.test(MG_L22$zMG_LATENCY)
+hist(MG_L22$zMG_LATENCY )
+
+shapiro.test(MG_L23$zMG_LATENCY)
+hist(MG_L23$zMG_LATENCY )
+
+shapiro.test(MG_L24$zMG_LATENCY)
+hist(MG_L24$zMG_LATENCY )
+
+shapiro.test(MG_L25$zMG_LATENCY)
+hist(MG_L25$zMG_LATENCY)
+
+shapiro.test(MG_L26$zMG_LATENCY)
+hist(MG_L26$zMG_LATENCY )
+
+shapiro.test(MG_L27$zMG_LATENCY)
+hist(MG_L27$zMG_LATENCY )
+
+shapiro.test(MG_L28$zMG_LATENCY)
+hist(MG_L28$zMG_LATENCY )
+
+#missing MG_ERROR
+MG_E1 <- all_impute[ which(all_impute$ID=='MS013'), ]
+MG_E2 <- all_impute[ which(all_impute$ID=='MS094'), ]
+MG_E3 <- all_impute[ which(all_impute$ID=='MS095'), ]
+MG_E4 <- all_impute[ which(all_impute$ID=='MS096'), ]
+MG_E5 <- all_impute[ which(all_impute$ID=='MS098'), ]
+MG_E6 <- all_impute[ which(all_impute$ID=='MS099'), ]
+MG_E7 <- all_impute[ which(all_impute$ID=='MS100'), ]
+MG_E8 <- all_impute[ which(all_impute$ID=='MS101'), ]
+MG_E9 <- all_impute[ which(all_impute$ID=='MS103'), ]
+MG_E10 <- all_impute[ which(all_impute$ID=='MS104'), ]
+MG_E11 <- all_impute[ which(all_impute$ID=='MS105'), ]
+MG_E12 <- all_impute[ which(all_impute$ID=='MS106'), ]
+MG_E13 <- all_impute[ which(all_impute$ID=='MS107'), ]
+MG_E14 <- all_impute[ which(all_impute$ID=='MS108'), ]
+MG_E15 <- all_impute[ which(all_impute$ID=='MS109'), ]
+MG_E16 <- all_impute[ which(all_impute$ID=='MS110'), ]
+MG_E17 <- all_impute[ which(all_impute$ID=='MS111'), ]
+MG_E18 <- all_impute[ which(all_impute$ID=='MS112'), ]
+MG_E19 <- all_impute[ which(all_impute$ID=='MS113'), ]
+MG_E20 <- all_impute[ which(all_impute$ID=='MS114'), ]
+MG_E21 <- all_impute[ which(all_impute$ID=='MS115'), ]
+MG_E22 <- all_impute[ which(all_impute$ID=='MS116'), ]
+MG_E23 <- all_impute[ which(all_impute$ID=='MS117'), ]
+MG_E24 <- all_impute[ which(all_impute$ID=='MS118'), ]
+MG_E25 <- all_impute[ which(all_impute$ID=='MS120'), ]
+MG_E26 <- all_impute[ which(all_impute$ID=='MS121'), ]
+MG_E27 <- all_impute[ which(all_impute$ID=='MS131'), ]
+MG_E28 <- all_impute[ which(all_impute$ID=='MS083'), ]
+
+shapiro.test(MG_E1$zMG_ERROR)
+hist(MG_E1$zMG_ERROR)
+
+shapiro.test(MG_E2$zMG_ERROR)
+hist(MG_E2$zMG_ERROR)
+
+shapiro.test(MG_E3$zMG_ERROR)
+hist(MG_E3$zMG_ERROR)
+
+shapiro.test(MG_E4$zMG_ERROR)
+hist(MG_E4$zMG_ERROR)
+
+shapiro.test(MG_E5$zMG_ERROR)
+hist(MG_E5$zMG_ERROR)
+
+shapiro.test(MG_E6$zMG_ERROR)
+hist(MG_E6$zMG_ERROR)
+
+shapiro.test(MG_E7$zMG_ERROR)
+hist(MG_E7$zMG_ERROR)
+
+shapiro.test(MG_E8$zMG_ERROR)
+hist(MG_E8$zMG_ERROR)
+
+shapiro.test(MG_E9$zMG_ERROR)
+hist(MG_E9$zMG_ERROR)
+
+shapiro.test(MG_E10$zMG_ERROR)
+hist(MG_E10$zMG_ERROR)
+
+shapiro.test(MG_E11$zMG_ERROR)
+hist(MG_E11$zMG_ERROR)
+
+shapiro.test(MG_E12$zMG_ERROR)
+hist(MG_E12$zMG_ERROR)
+
+shapiro.test(MG_E13$zMG_ERROR)
+hist(MG_E13$zMG_ERROR)
+
+shapiro.test(MG_E14$zMG_ERROR)
+hist(MG_E14$zMG_ERROR)
+
+shapiro.test(MG_E15$zMG_ERROR)
+hist(MG_E15$zMG_ERROR)
+
+shapiro.test(MG_E16$zMG_ERROR)
+hist(MG_E16$zMG_ERROR)
+
+shapiro.test(MG_E17$zMG_ERROR)
+hist(MG_E17$zMG_ERROR)
+
+shapiro.test(MG_E18$zMG_ERROR)
+hist(MG_E18$zMG_ERROR)
+
+shapiro.test(MG_E19$zMG_ERROR)
+hist(MG_E19$zMG_ERROR)
+
+shapiro.test(MG_E20$zMG_ERROR)
+hist(MG_E20$zMG_ERROR)
+
+shapiro.test(MG_E21$zMG_ERROR)
+hist(MG_E21$zMG_ERROR)
+
+shapiro.test(MG_E22$zMG_ERROR)
+hist(MG_E22$zMG_ERROR)
+
+shapiro.test(MG_E23$zMG_ERROR)
+hist(MG_E23$zMG_ERROR)
+
+shapiro.test(MG_E24$zMG_ERROR)
+hist(MG_E24$zMG_ERROR)
+
+shapiro.test(MG_E25$zMG_ERROR)
+hist(MG_E25$zMG_ERROR)
+
+shapiro.test(MG_E26$zMG_ERROR)
+hist(MG_E26$zMG_ERROR)
+
+shapiro.test(MG_E27$zMG_ERROR)
+hist(MG_E27$zMG_ERROR)
+
+shapiro.test(MG_E28$zMG_ERROR)
+hist(MG_E28$zMG_ERROR)
+
+#missing MG_FEP
+MG_F1 <- all_impute[ which(all_impute$ID=='MS013'), ]
+MG_F2 <- all_impute[ which(all_impute$ID=='MS094'), ]
+MG_F3 <- all_impute[ which(all_impute$ID=='MS095'), ]
+MG_F4 <- all_impute[ which(all_impute$ID=='MS096'), ]
+MG_F5 <- all_impute[ which(all_impute$ID=='MS098'), ]
+MG_F6 <- all_impute[ which(all_impute$ID=='MS099'), ]
+MG_F7 <- all_impute[ which(all_impute$ID=='MS100'), ]
+MG_F8 <- all_impute[ which(all_impute$ID=='MS101'), ]
+MG_F9 <- all_impute[ which(all_impute$ID=='MS103'), ]
+MG_F10 <- all_impute[ which(all_impute$ID=='MS104'), ]
+MG_F11 <- all_impute[ which(all_impute$ID=='MS105'), ]
+MG_F12 <- all_impute[ which(all_impute$ID=='MS106'), ]
+MG_F13 <- all_impute[ which(all_impute$ID=='MS107'), ]
+MG_F14 <- all_impute[ which(all_impute$ID=='MS108'), ]
+MG_F15 <- all_impute[ which(all_impute$ID=='MS109'), ]
+MG_F16 <- all_impute[ which(all_impute$ID=='MS110'), ]
+MG_F17 <- all_impute[ which(all_impute$ID=='MS111'), ]
+MG_F18 <- all_impute[ which(all_impute$ID=='MS112'), ]
+MG_F19 <- all_impute[ which(all_impute$ID=='MS113'), ]
+MG_F20 <- all_impute[ which(all_impute$ID=='MS114'), ]
+MG_F21 <- all_impute[ which(all_impute$ID=='MS115'), ]
+MG_F22 <- all_impute[ which(all_impute$ID=='MS116'), ]
+MG_F23 <- all_impute[ which(all_impute$ID=='MS117'), ]
+MG_F24 <- all_impute[ which(all_impute$ID=='MS118'), ]
+MG_F25 <- all_impute[ which(all_impute$ID=='MS120'), ]
+MG_F26 <- all_impute[ which(all_impute$ID=='MS121'), ]
+MG_F27 <- all_impute[ which(all_impute$ID=='MS131'), ]
+MG_F28 <- all_impute[ which(all_impute$ID=='MS139'), ]
+MG_F29 <- all_impute[ which(all_impute$ID=='MS030'), ]
+
+shapiro.test(MG_F1$zMG_FEP)
+hist(MG_F1$zMG_FEP)
+
+shapiro.test(MG_F2$zMG_FEP)
+hist(MG_F2$zMG_FEP)
+
+shapiro.test(MG_F3$zMG_FEP)
+hist(MG_F3$zMG_FEP)
+
+shapiro.test(MG_F4$zMG_FEP)
+hist(MG_F4$zMG_FEP)
+
+shapiro.test(MG_F5$zMG_FEP)
+hist(MG_F5$zMG_FEP)
+
+shapiro.test(MG_F6$zMG_FEP)
+hist(MG_F6$zMG_FEP)
+
+shapiro.test(MG_F7$zMG_FEP)
+hist(MG_F7$zMG_FEP)
+
+shapiro.test(MG_F8$zMG_FEP)
+hist(MG_F8$zMG_FEP)
+
+shapiro.test(MG_F9$zMG_FEP)
+hist(MG_F9$zMG_FEP)
+
+shapiro.test(MG_F10$zMG_FEP)
+hist(MG_F10$zMG_FEP)
+
+shapiro.test(MG_F11$zMG_FEP)
+hist(MG_F11$zMG_FEP)
+
+shapiro.test(MG_F12$zMG_FEP)
+hist(MG_F12$zMG_FEP)
+
+shapiro.test(MG_F13$zMG_FEP)
+hist(MG_F13$zMG_FEP)
+
+shapiro.test(MG_F14$zMG_FEP)
+hist(MG_F14$zMG_FEP)
+
+shapiro.test(MG_F15$zMG_FEP)
+hist(MG_F15$zMG_FEP)
+
+shapiro.test(MG_F16$zMG_FEP)
+hist(MG_F16$zMG_FEP)
+
+shapiro.test(MG_F17$zMG_FEP)
+hist(MG_F17$zMG_FEP)
+
+shapiro.test(MG_F18$zMG_FEP)
+hist(MG_F18$zMG_FEP)
+
+shapiro.test(MG_F19$zMG_FEP)
+hist(MG_F19$zMG_FEP)
+
+shapiro.test(MG_F20$zMG_FEP)
+hist(MG_F20$zMG_FEP)
+
+shapiro.test(MG_F21$zMG_FEP)
+hist(MG_F21$zMG_FEP)
+
+shapiro.test(MG_F22$zMG_FEP)
+hist(MG_F22$zMG_FEP)
+
+shapiro.test(MG_F23$zMG_FEP)
+hist(MG_F23$zMG_FEP)
+
+shapiro.test(MG_F24$zMG_FEP)
+hist(MG_F24$zMG_FEP)
+
+shapiro.test(MG_F25$zMG_FEP)
+hist(MG_F25$zMG_FEP)
+
+shapiro.test(MG_F26$zMG_FEP)
+hist(MG_F26$zMG_FEP)
+
+shapiro.test(MG_F27$zMG_FEP)
+hist(MG_F27$zMG_FEP)
+
+shapiro.test(MG_F28$zMG_FEP)
+hist(MG_F28$zMG_FEP)
+
+shapiro.test(MG_F29$zMG_FEP)
+hist(MG_F29$zMG_FEP)
+
+#missing VDI_R
+VDI_R1 <- all_impute[ which(all_impute$ID=='MS004'), ]
+VDI_R2 <- all_impute[ which(all_impute$ID=='MS007'), ]
+VDI_R3 <- all_impute[ which(all_impute$ID=='MS060'), ]
+VDI_R4 <- all_impute[ which(all_impute$ID=='MS073'), ]
+VDI_R5 <- all_impute[ which(all_impute$ID=='MS116'), ]
+VDI_R6 <- all_impute[ which(all_impute$ID=='MS022'), ]
+
+shapiro.test(VDI_R1$zVDI_R)
+hist(VDI_R1$zVDI_R)
+
+shapiro.test(VDI_R2$zVDI_R)
+hist(VDI_R2$zVDI_R)
+
+shapiro.test(VDI_R3$zVDI_R)
+hist(VDI_R3$zVDI_R)
+
+shapiro.test(VDI_R4$zVDI_R)
+hist(VDI_R4$zVDI_R)
+
+shapiro.test(VDI_R5$zVDI_R)
+hist(VDI_R5$zVDI_R)
+
+shapiro.test(VDI_R6$zVDI_R)
+hist(VDI_R6$zVDI_R)
+
+#missing VDI_L
+VDI_L1 <- all_impute[ which(all_impute$ID=='MS004'), ]
+VDI_L2 <- all_impute[ which(all_impute$ID=='MS007'), ]
+VDI_L3 <- all_impute[ which(all_impute$ID=='MS060'), ]
+VDI_L4 <- all_impute[ which(all_impute$ID=='MS073'), ]
+VDI_L5 <- all_impute[ which(all_impute$ID=='MS116'), ]
+VDI_L6 <- all_impute[ which(all_impute$ID=='MS022'), ]
+
+shapiro.test(VDI_L1$zVDI_L)
+hist(VDI_L1$zVDI_L)
+
+shapiro.test(VDI_L2$zVDI_L)
+hist(VDI_L2$zVDI_L)
+
+shapiro.test(VDI_L3$zVDI_L)
+hist(VDI_L3$zVDI_L)
+
+shapiro.test(VDI_L4$zVDI_L)
+hist(VDI_L4$zVDI_L)
+
+shapiro.test(VDI_L5$zVDI_L)
+hist(VDI_L5$zVDI_L)
+
+shapiro.test(VDI_L6$zVDI_L)
+hist(VDI_L6$zVDI_L)
+
+```
+
+```{r ## EFA ## }
+imp <- read_xlsx("7_Imputed_dataset_WITH_CLASSES.xlsx")
+
+##2-factor model 
+efa_f2 <- '
+efa("efa")*efa_f1 +
+efa("efa")*efa_f2=~ 
+zVG_LATENCY_1 + zEC_LATENCY_1 + zEC_ERROR_1 + zAS_LATENCY_1 + zAS_ERROR_1 + zMG_LATENCY_1 + zMG_ERROR_1 +zAS_FEP_1 + zMG_FEP_1 + zVDI_1'
+
+efamodel_f2 <- 
+  cfa(model = efa_f2,
+      data = imp,
+      rotation = "oblimin",
+      estimator = "MLR", missing = "ML",
+      mimic = "Mplus")
+summary(efamodel_f2, fit.measures = TRUE, standardized = TRUE)
+
+##3-factor model
+efa_f3 <- '
+efa("efa")*efa_f1 +
+efa("efa")*efa_f2 +
+efa("efa")*efa_f3=~ 
+zVG_LATENCY_1 + zEC_LATENCY_1 + zEC_ERROR_1 + zAS_LATENCY_1 + zAS_ERROR_1 + zMG_LATENCY_1 + zMG_ERROR_1 +zAS_FEP_1 + zMG_FEP_1 + zVDI_1'
+
+efamodel_f3 <- 
+  cfa(model = efa_f3,
+      data = imp,
+      rotation = "oblimin",
+      estimator = "MLR", missing = "ML",
+      mimic = "Mplus")
+summary(efamodel_f3, fit.measures = TRUE, standardized = TRUE)
+
+## 4 factor model 
+efa_f4 <- '
+efa("efa")*efa_f1 +
+efa("efa")*efa_f2 +
+efa("efa")*efa_f3 +
+efa("efa")*efa_f4=~ 
+zVG_LATENCY_1 + zEC_LATENCY_1 + zEC_ERROR_1 + zAS_LATENCY_1 + zAS_ERROR_1 + zMG_LATENCY_1 + zMG_ERROR_1 +zAS_FEP_1 + zMG_FEP_1 + zVDI_1'
+
+efamodel_f4 <- 
+  cfa(model = efa_f4,
+      data = imp,
+      rotation = "oblimin",
+      estimator = "MLR", missing = "ML",
+      mimic = "Mplus")
+summary(efamodel_f4, fit.measures = TRUE, standardized = TRUE)
+
+## 5 factor model 
+efa_f5 <- '
+efa("efa")*efa_f1 +
+efa("efa")*efa_f2 +
+efa("efa")*efa_f3 +
+efa("efa")*efa_f4 +
+efa("efa")*efa_f5=~ 
+zVG_LATENCY_1 + zEC_LATENCY_1 + zEC_ERROR_1 + zAS_LATENCY_1 + zAS_ERROR_1 + zMG_LATENCY_1 + zMG_ERROR_1 +zAS_FEP_1 + zMG_FEP_1 + zVDI_1'
+
+efamodel_f5 <- 
+  cfa(model = efa_f5,
+      data = imp,
+      rotation = "oblimin",
+      estimator = "MLR", missing = "ML",
+      mimic = "Mplus")
+summary(efamodel_f5, fit.measures = TRUE, standardized = TRUE)
+
+## 6 factor model 
+efa_f6 <- '
+efa("efa")*efa_f1 +
+efa("efa")*efa_f2 +
+efa("efa")*efa_f3 +
+efa("efa")*efa_f4 +
+efa("efa")*efa_f5 +
+efa("efa")*efa_f6=~ 
+zVG_LATENCY_1 + zEC_LATENCY_1 + zEC_ERROR_1 + zAS_LATENCY_1 + zAS_ERROR_1 + zMG_LATENCY_1 + zMG_ERROR_1 +zAS_FEP_1 + zMG_FEP_1 + zVDI_1'
+
+efamodel_f6 <- 
+  cfa(model = efa_f6,
+      data = imp,
+      rotation = "oblimin",
+      estimator = "MLR", missing = "ML",
+      mimic = "Mplus")
+summary(efamodel_f6, fit.measures = TRUE, standardized = TRUE)
+
+```
+
+```{r ## inspect imputed phenotypes (phenotypes generated in Mplus) ##}
+##subset classes in data 
+Table_1 <- read_xlsx("7_Imputed_dataset_WITH_CLASSES.xlsx")
+Table_1_dt <- as.data.table(Table_1)
+
+Subset_1 <- Table_1_dt[Class == 1]
+Subset_2 <- Table_1_dt[Class == 2]
+Subset_3 <- Table_1_dt[Class == 3]
+Subset_4 <- Table_1_dt[Class == 4]
+
+View(Subset_1)
+View(Subset_2)
+View(Subset_3)
+View(Subset_4)
+
+Table_1_dt$Class <- as.factor(Table_1_dt$Class)
+
+##homogeneity of variance
+leveneTest(zRNFL_1 ~ Class, data = Table_1_dt) 
+leveneTest(zVG_LATENCY_1 ~ Class, data = Table_1_dt)
+leveneTest(zEC_LATENCY_1 ~ Class, data = Table_1_dt)
+leveneTest(zEC_ERROR_1 ~ Class, data = Table_1_dt)
+leveneTest(zAS_FEP_1 ~ Class, data = Table_1_dt)
+leveneTest(zAS_LATENCY_1 ~ Class, data = Table_1_dt)
+leveneTest(zAS_ERROR_1 ~ Class, data = Table_1_dt)
+leveneTest(zMG_FEP_1  ~ Class, data = Table_1_dt)
+leveneTest(zMG_LATENCY_1 ~ Class, data = Table_1_dt)
+leveneTest(zMG_ERROR_1 ~ Class, data = Table_1_dt)
+leveneTest(zVDI_R_1 ~ Class, data = Table_1_dt)
+leveneTest(zVDI_L_1 ~ Class, data = Table_1_dt)
+
+##normality 
+shapiro.test(Subset_1$zRNFL_1)
+shapiro.test(Subset_1$zVG_LATENCY_1)
+shapiro.test(Subset_1$zEC_LATENCY_1)
+shapiro.test(Subset_1$zEC_ERROR_1)
+shapiro.test(Subset_1$zAS_FEP_1)
+shapiro.test(Subset_1$zAS_LATENCY_1)
+shapiro.test(Subset_1$zAS_ERROR_1)
+shapiro.test(Subset_1$zMG_FEP_1)
+shapiro.test(Subset_1$zMG_LATENCY_1)
+shapiro.test(Subset_1$zMG_ERROR_1)
+shapiro.test(Subset_1$zVDI_R_1)
+shapiro.test(Subset_1$zVDI_L_1)
+
+shapiro.test(Subset_2$zRNFL_1)
+shapiro.test(Subset_2$zVG_LATENCY_1)
+shapiro.test(Subset_2$zEC_LATENCY_1)
+shapiro.test(Subset_2$zEC_ERROR_1)
+shapiro.test(Subset_2$zAS_FEP_1)
+shapiro.test(Subset_2$zAS_LATENCY_1)
+shapiro.test(Subset_2$zAS_ERROR_1)
+shapiro.test(Subset_2$zMG_FEP_1)
+shapiro.test(Subset_2$zMG_LATENCY_1)
+shapiro.test(Subset_2$zMG_ERROR_1)
+shapiro.test(Subset_2$zVDI_R_1)
+shapiro.test(Subset_2$zVDI_L_1)
+
+shapiro.test(Subset_3$zRNFL_1)
+shapiro.test(Subset_3$zVG_LATENCY_1)
+shapiro.test(Subset_3$zEC_LATENCY_1)
+shapiro.test(Subset_3$zEC_ERROR_1)
+shapiro.test(Subset_3$zAS_FEP_1)
+shapiro.test(Subset_3$zAS_LATENCY_1)
+shapiro.test(Subset_3$zAS_ERROR_1)
+shapiro.test(Subset_3$zMG_FEP_1)
+shapiro.test(Subset_3$zMG_LATENCY_1)
+shapiro.test(Subset_3$zMG_ERROR_1)
+shapiro.test(Subset_3$zVDI_R_1)
+shapiro.test(Subset_3$zVDI_L_1)
+
+shapiro.test(Subset_4$zRNFL_1)
+shapiro.test(Subset_4$zVG_LATENCY_1)
+shapiro.test(Subset_4$zEC_LATENCY_1)
+shapiro.test(Subset_4$zEC_ERROR_1)
+shapiro.test(Subset_4$zAS_FEP_1)
+shapiro.test(Subset_4$zAS_LATENCY_1)
+shapiro.test(Subset_4$zAS_ERROR_1)
+shapiro.test(Subset_4$zMG_FEP_1)
+shapiro.test(Subset_4$zMG_LATENCY_1)
+shapiro.test(Subset_4$zMG_ERROR_1)
+shapiro.test(Subset_4$zVDI_R_1)
+shapiro.test(Subset_4$zVDI_L_1)
+
+#phenotype median/IQR
+median(Subset_1$zRNFL_1)
+median(Subset_1$zVG_LATENCY_1)
+median(Subset_1$zEC_LATENCY_1)
+median(Subset_1$zEC_ERROR_1)
+median(Subset_1$zAS_FEP_1)
+median(Subset_1$zAS_LATENCY_1)
+median(Subset_1$zAS_ERROR_1)
+median(Subset_1$zMG_FEP_1)
+median(Subset_1$zMG_LATENCY_1)
+median(Subset_1$zMG_ERROR_1)
+median(Subset_1$zVDI_R_1)
+median(Subset_1$zVDI_L_1)
+
+IQR(Subset_1$zRNFL_1)
+IQR(Subset_1$zVG_LATENCY_1)
+IQR(Subset_1$zEC_LATENCY_1)
+IQR(Subset_1$zEC_ERROR_1)
+IQR(Subset_1$zAS_FEP_1)
+IQR(Subset_1$zAS_LATENCY_1)
+IQR(Subset_1$zAS_ERROR_1)
+IQR(Subset_1$zMG_FEP_1)
+IQR(Subset_1$zMG_LATENCY_1)
+IQR(Subset_1$zMG_ERROR_1)
+IQR(Subset_1$zVDI_R_1)
+IQR(Subset_1$zVDI_L_1)
+
+median(Subset_2$zRNFL_1)
+median(Subset_2$zVG_LATENCY_1)
+median(Subset_2$zEC_LATENCY_1)
+median(Subset_2$zEC_ERROR_1)
+median(Subset_2$zAS_FEP_1)
+median(Subset_2$zAS_LATENCY_1)
+median(Subset_2$zAS_ERROR_1)
+median(Subset_2$zMG_FEP_1)
+median(Subset_2$zMG_LATENCY_1)
+median(Subset_2$zMG_ERROR_1)
+median(Subset_2$zVDI_R_1)
+median(Subset_2$zVDI_L_1)
+
+IQR(Subset_2$zRNFL_1)
+IQR(Subset_2$zVG_LATENCY_1)
+IQR(Subset_2$zEC_LATENCY_1)
+IQR(Subset_2$zEC_ERROR_1)
+IQR(Subset_2$zAS_FEP_1)
+IQR(Subset_2$zAS_LATENCY_1)
+IQR(Subset_2$zAS_ERROR_1)
+IQR(Subset_2$zMG_FEP_1)
+IQR(Subset_2$zMG_LATENCY_1)
+IQR(Subset_2$zMG_ERROR_1)
+IQR(Subset_2$zVDI_R_1)
+IQR(Subset_2$zVDI_L_1)
+
+median(Subset_3$zRNFL_1)
+median(Subset_3$zVG_LATENCY_1)
+median(Subset_3$zEC_LATENCY_1)
+median(Subset_3$zEC_ERROR_1)
+median(Subset_3$zAS_FEP_1)
+median(Subset_3$zAS_LATENCY_1)
+median(Subset_3$zAS_ERROR_1)
+median(Subset_3$zMG_FEP_1)
+median(Subset_3$zMG_LATENCY_1)
+median(Subset_3$zMG_ERROR_1)
+median(Subset_3$zVDI_R_1)
+median(Subset_3$zVDI_L_1)
+
+IQR(Subset_3$zRNFL_1)
+IQR(Subset_3$zVG_LATENCY_1)
+IQR(Subset_3$zEC_LATENCY_1)
+IQR(Subset_3$zEC_ERROR_1)
+IQR(Subset_3$zAS_FEP_1)
+IQR(Subset_3$zAS_LATENCY_1)
+IQR(Subset_3$zAS_ERROR_1)
+IQR(Subset_3$zMG_FEP_1)
+IQR(Subset_3$zMG_LATENCY_1)
+IQR(Subset_3$zMG_ERROR_1)
+IQR(Subset_3$zVDI_R_1)
+IQR(Subset_3$zVDI_L_1)
+
+median(Subset_4$zRNFL_1)
+median(Subset_4$zVG_LATENCY_1)
+median(Subset_4$zEC_LATENCY_1)
+median(Subset_4$zEC_ERROR_1)
+median(Subset_4$zAS_FEP_1)
+median(Subset_4$zAS_LATENCY_1)
+median(Subset_4$zAS_ERROR_1)
+median(Subset_4$zMG_FEP_1)
+median(Subset_4$zMG_LATENCY_1)
+median(Subset_4$zMG_ERROR_1)
+median(Subset_4$zVDI_R_1)
+median(Subset_4$zVDI_L_1)
+
+IQR(Subset_4$zRNFL_1)
+IQR(Subset_4$zVG_LATENCY_1)
+IQR(Subset_4$zEC_LATENCY_1)
+IQR(Subset_4$zEC_ERROR_1)
+IQR(Subset_4$zAS_FEP_1)
+IQR(Subset_4$zAS_LATENCY_1)
+IQR(Subset_4$zAS_ERROR_1)
+IQR(Subset_4$zMG_FEP_1)
+IQR(Subset_4$zMG_LATENCY_1)
+IQR(Subset_4$zMG_ERROR_1)
+IQR(Subset_4$zVDI_R_1)
+IQR(Subset_4$zVDI_L_1)
+
+```
+
+```{r ## sensitivity analysis: non-imputed phenotype medians (phenotypes generated in Mplus) ##}
+##Subset data into classes. NB: Profile labels "2" and "3" swapped in manuscript table for ease of comparison with imputed model
+Table_2 <- read_xlsx("8_Missing_dataset_WITH_CLASSES.xlsx")
+
+Table_2_dt <- as.data.table(Table_2)
+
+Subset_m1 <- Table_2_dt[Class == 1]
+Subset_m2 <- Table_2_dt[Class == 2]
+Subset_m3 <- Table_2_dt[Class == 3]
+
+View(Subset_m1)
+View(Subset_m2)
+View(Subset_m3)
+
+##normality 
+shapiro.test(Subset_m1$zRNFL)
+shapiro.test(Subset_m1$zVG_LATENCY)
+shapiro.test(Subset_m1$zEC_LATENCY)
+shapiro.test(Subset_m1$zEC_ERROR)
+shapiro.test(Subset_m1$zAS_FEP)
+shapiro.test(Subset_m1$zAS_LATENCY)
+shapiro.test(Subset_m1$zAS_ERROR)
+shapiro.test(Subset_m1$zMG_FEP)
+shapiro.test(Subset_m1$zMG_LATENCY)
+shapiro.test(Subset_m1$zMG_ERROR)
+shapiro.test(Subset_m1$zVDI_R)
+shapiro.test(Subset_m1$zVDI_L)
+
+shapiro.test(Subset_m2$zRNFL)
+shapiro.test(Subset_m2$zVG_LATENCY)
+shapiro.test(Subset_m2$zEC_LATENCY)
+shapiro.test(Subset_m2$zEC_ERROR)
+shapiro.test(Subset_m2$zAS_FEP)
+shapiro.test(Subset_m2$zAS_LATENCY)
+shapiro.test(Subset_m2$zAS_ERROR)
+shapiro.test(Subset_m2$zMG_FEP)
+shapiro.test(Subset_m2$zMG_LATENCY)
+shapiro.test(Subset_m2$zMG_ERROR)
+shapiro.test(Subset_m2$zVDI_R)
+shapiro.test(Subset_m2$zVDI_L)
+
+shapiro.test(Subset_m3$zRNFL)
+shapiro.test(Subset_m3$zVG_LATENCY)
+shapiro.test(Subset_m3$zEC_LATENCY)
+shapiro.test(Subset_m3$zEC_ERROR)
+shapiro.test(Subset_m3$zAS_FEP)
+shapiro.test(Subset_m3$zAS_LATENCY)
+shapiro.test(Subset_m3$zAS_ERROR)
+shapiro.test(Subset_m3$zMG_FEP)
+shapiro.test(Subset_m3$zMG_LATENCY)
+shapiro.test(Subset_m3$zMG_ERROR)
+shapiro.test(Subset_m3$zVDI_R)
+shapiro.test(Subset_m3$zVDI_L)
+
+##phenotype medians
+median(Subset_m1$zRNFL, na.rm = TRUE)
+median(Subset_m1$zVG_LATENCY, na.rm = TRUE)
+median(Subset_m1$zEC_LATENCY, na.rm = TRUE)
+median(Subset_m1$zEC_ERROR, na.rm = TRUE)
+median(Subset_m1$zAS_FEP, na.rm = TRUE)
+median(Subset_m1$zAS_LATENCY, na.rm = TRUE)
+median(Subset_m1$zAS_ERROR, na.rm = TRUE)
+median(Subset_m1$zMG_FEP, na.rm = TRUE)
+median(Subset_m1$zMG_LATENCY, na.rm = TRUE)
+median(Subset_m1$zMG_ERROR, na.rm = TRUE)
+median(Subset_m1$zVDI_R, na.rm = TRUE)
+median(Subset_m1$zVDI_L, na.rm = TRUE)
+
+median(Subset_m2$zRNFL, na.rm = TRUE)
+median(Subset_m2$zVG_LATENCY, na.rm = TRUE)
+median(Subset_m2$zEC_LATENCY, na.rm = TRUE)
+median(Subset_m2$zEC_ERROR, na.rm = TRUE)
+median(Subset_m2$zAS_FEP, na.rm = TRUE)
+median(Subset_m2$zAS_LATENCY, na.rm = TRUE)
+median(Subset_m2$zAS_ERROR, na.rm = TRUE)
+median(Subset_m2$zMG_FEP, na.rm = TRUE)
+median(Subset_m2$zMG_LATENCY, na.rm = TRUE)
+median(Subset_m2$zMG_ERROR, na.rm = TRUE)
+median(Subset_m2$zVDI_R, na.rm = TRUE)
+median(Subset_m2$zVDI_L, na.rm = TRUE)
+
+median(Subset_m3$zRNFL, na.rm = TRUE)
+median(Subset_m3$zVG_LATENCY, na.rm = TRUE)
+median(Subset_m3$zEC_LATENCY, na.rm = TRUE)
+median(Subset_m3$zEC_ERROR, na.rm = TRUE)
+median(Subset_m3$zAS_FEP, na.rm = TRUE)
+median(Subset_m3$zAS_LATENCY, na.rm = TRUE)
+median(Subset_m3$zAS_ERROR, na.rm = TRUE)
+median(Subset_m3$zMG_FEP, na.rm = TRUE)
+median(Subset_m3$zMG_LATENCY, na.rm = TRUE)
+median(Subset_m3$zMG_ERROR, na.rm = TRUE)
+median(Subset_m3$zVDI_R, na.rm = TRUE)
+median(Subset_m3$zVDI_L, na.rm = TRUE)
+
+```
+
+```{r ## inter-phenotype differences (phenotypes generated in Mplus) ##}
+##Profile differences in clinical characteristics 
+Table_1 <- read_xlsx("7_Imputed_dataset_WITH_CLASSES.xlsx")
+
+Table_1$Class <- as.factor(Table_1$Class)
+
+shapiro.test(Table_1$SDMT_1)
+shapiro.test(Table_1$EDSS_1)
+shapiro.test(Table_1$BDI_1)
+shapiro.test(Table_1$NART_1)
+shapiro.test(Table_1$SYMP_DURATION_1)
+shapiro.test(Table_1$VA_Log_1)
+shapiro.test(Table_1$AGE)
+
+AGE_dif <- kruskal.test(AGE ~ Class, data = Table_1)
+print(AGE_dif)
+dunn.test(Table_1$AGE, Table_1$Class, method = "bonferroni")
+AGE_eta <- kruskal_effsize(AGE ~ Class, data = Table_1)
+view(AGE_eta)
+
+mean(Subset_1$AGE)
+mean(Subset_2$AGE)
+mean(Subset_3$AGE)
+mean(Subset_4$AGE)
+
+SDMT_dif <- kruskal.test(SDMT_1 ~ Class, data = Table_1)
+print(SDMT_dif)
+dunn.test(Table_1$SDMT_1, Table_1$Class, method = "bonferroni")
+SDMT_eta <- kruskal_effsize(SDMT_1 ~ Class, data = Table_1)
+view(SDMT_eta)
+
+EDSS_dif <- kruskal.test(EDSS_1 ~ Class, data = Table_1)
+print(EDSS_dif)
+
+SYMP_DURATION_dif <- kruskal.test(SYMP_DURATION_1 ~ Class, data = Table_1)
+print(SYMP_DURATION_dif)
+
+BDI_dif <- kruskal.test(BDI_1 ~ Class, data = Table_1)
+print(BDI_dif)
+
+NART_dif <- kruskal.test(NART_1 ~ Class, data = Table_1)
+print(NART_dif)
+
+VA_Log_dif <- kruskal.test(VA_Log_1 ~ Class, data = Table_1)
+print(VA_Log_dif)
+
+SEX_df <- data.frame(Table_1$SEX, Table_1$Class)
+SEX_df = table(Table_1$SEX, Table_1$Class) 
+print(SEX_df)
+print(chisq.test(SEX_df))
+SEX_dif <- kruskal.test(SEX ~ Class, data = Table_1)
+print(SEX_dif)
+
+# Create name vector with phenotype labels
+labels <- c("Early Visual Changes", "Efferent-Cognitive", 
+            "Cognitive Control", "Afferent-Processing Speed")
+
+# Visualise phenotype differences (NB: Final manuscript boxplots for age/SDMT generated in excel)
+imp <- Table_1
+
+   ggboxplot(imp, x = "Class", y = "AGE", color = "Class", palette = c("#FF0000", "#0000FF", "#00FF00", "#FF9D00"),
+ylab = "Age", xlab = "Class") +
+  scale_x_discrete(labels = labels) +
+  ggtitle("Age") +
+  theme(plot.title = element_text(hjust = .5, face = "bold", size = 14, margin = margin(b = 50)),
+        axis.title.y = element_text(margin = margin(r = 40)),
+        axis.title.x = element_text(margin = margin(t = 40)))+
+          theme(legend.position = "none")
+
+  ggboxplot(imp, x = "Class", y = "NART_1", color = "Class", palette = c("#FF0000", "#0000FF", "#00FF00", "#FF9D00"),
+ylab = "NART Std Score", xlab = "Class") +
+  scale_x_discrete(labels = labels) +
+  ggtitle("Estimated Premorbid IQ") +
+  theme(plot.title = element_text(hjust = .5, face = "bold", size = 14, margin = margin(b = 50)),
+        axis.title.y = element_text(margin = margin(r = 40)),
+        axis.title.x = element_text(margin = margin(t = 40)))+
+          theme(legend.position = "none")
+          
+   ggboxplot(imp, x = "Class", y = "VA_Log_1", color = "Class", palette = c("#FF0000", "#0000FF", "#00FF00", "#FF9D00"),
+ylab = "LogMAR VA", xlab = "Class") +
+  scale_x_discrete(labels = labels) +
+  ggtitle("Visual Acuity") +
+  theme(plot.title = element_text(hjust = .5, face = "bold", size = 14, margin = margin(b = 30)),
+        axis.title.y = element_text(margin = margin(r = 40)),
+        axis.title.x = element_text(margin = margin(t = 40)))+
+          theme(legend.position = "none")
+             
+    ggboxplot(imp, x = "Class", y = "BDI_1", color = "Class", palette = c("#FF0000", "#0000FF", "#00FF00", "#FF9D00"),
+ylab = "BDI Total Score", xlab = "Class") +
+  scale_x_discrete(labels = labels) +
+  ggtitle("Self-Reported Depression Rating") +
+  theme(plot.title = element_text(hjust = .5, face = "bold", size = 14, margin = margin(b = 30)),
+        axis.title.y = element_text(margin = margin(r = 40)),
+        axis.title.x = element_text(margin = margin(t = 40)))+
+          theme(legend.position = "none")
+
+     ggboxplot(imp, x = "Class", y = "SYMP_DURATION_1", color = "Class", palette = c("#FF0000", "#0000FF", "#00FF00", "#FF9D00"),
+ylab = "Symptom Duration (months)", xlab = "Class") +
+  scale_x_discrete(labels = labels) +
+  ggtitle("Symptom Duration") +
+  theme(plot.title = element_text(hjust = .5, face = "bold", size = 14, margin = margin(b = 20)),
+        axis.title.y = element_text(margin = margin(r = 40)),
+        axis.title.x = element_text(margin = margin(t = 40)))+
+          theme(legend.position = "none")
+          
+      ggboxplot(imp, x = "Class", y = "EDSS_1", color = "Class", palette = c("#FF0000", "#0000FF", "#00FF00", "#FF9D00"),
+ylab = "EDSS Total Score", xlab = "Class") +
+  scale_x_discrete(labels = labels) +
+  ggtitle("Expanded Disability Status Scale") +
+  theme(plot.title = element_text(hjust = .5, face = "bold", size = 14, margin = margin(b = 20)),
+        axis.title.y = element_text(margin = margin(r = 40)),
+        axis.title.x = element_text(margin = margin(t = 40)))+
+          theme(legend.position = "none")
+
+      ggboxplot(imp, x = "Class", y = "SDMT_1", color = "Class", palette = c("#FF0000", "#0000FF", "#00FF00", "#FF9D00"),
+ylab = "SDMT Total Score", xlab = "Class") +
+  scale_x_discrete(labels = labels) +
+  ggtitle("Symbol Digit Modalities Test") +
+  theme(plot.title = element_text(hjust = .5, face = "bold", size = 14, margin = margin(b = 20)),
+        axis.title.y = element_text(margin = margin(r = 40)),
+        axis.title.x = element_text(margin = margin(t = 40)))+
+          theme(legend.position = "none")
+
+##Frequency tables by phenotype for disease status, sex and INO
+table_status <- table(Table_1$Class, Table_1$STATUS)
+print(table_status)
+
+table_sex <- table(Table_1$Class, Table_1$SEX)
+print(table_sex)
+
+table_INO <- table(Table_1$Class, Table_1$INO)
+print(table_INO)
+
+```
