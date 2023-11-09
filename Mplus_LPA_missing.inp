@@ -1,0 +1,41 @@
+ DATA: file='Mplus_missing.dat';
+
+   VARIABLE:
+
+        names= ID,STATUS,SYMP_DURATION,AGE,
+        SEX,EDSS,ON_CODED, VA_Log,INO,BDI,NART,SDMT, zRNFL,
+        zVG_LATENCY,zEC_LATENCY,zEC_ERROR,zAS_FEP,zAS_LATENCY,
+        zAS_ERROR,zMG_FEP,zMG_LATENCY,zMG_ERROR,zVDI_R,zVDI_L,;
+
+        missing= all(9999);
+
+        usevariables= zRNFL,zVG_LATENCY,zEC_LATENCY,
+        ,zEC_ERROR,zAS_FEP,zAS_LATENCY,zAS_ERROR,zMG_FEP,
+        zMG_LATENCY,zMG_ERROR,zVDI_R,zVDI_L;
+
+
+        classes = c(3);
+
+    ANALYSIS:
+
+        type = mixture;
+
+        starts = 250 50;
+
+        stiterations = 50;
+
+
+    OUTPUT:
+
+        sampstat;
+
+        TECH1 TECH8 TECH14;
+
+
+
+    PLOT: TYPE= PLOT3;
+        
+
+    SAVEDATA:
+  FILE = "class_membership_miss.csv";
+  SAVE = CPROB;
